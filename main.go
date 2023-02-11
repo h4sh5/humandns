@@ -156,7 +156,7 @@ func handleRequests() {
     http.HandleFunc("/register", registerPage)
     http.HandleFunc("/visit", resolvePage)
 
-    log.Fatal(http.ListenAndServe(":80", nil))
+    log.Fatal(http.ListenAndServe("0.0.0.0:80", nil))
 }
  
 
