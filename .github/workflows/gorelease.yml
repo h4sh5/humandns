@@ -1,8 +1,16 @@
-# .github/workflows/release.yaml
+name: Go build release
 
 on:
   release:
     types: [created]
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: # this is a nice option that will enable a button w/ inputs
+    inputs:
+      git-ref:
+        description: Git Ref (Optional)    
+        required: false
 
 jobs:
   release-linux-amd64:
