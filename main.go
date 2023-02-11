@@ -7,8 +7,14 @@ import (
     "fmt"
     "net/http"
     "strings"
+    // "context"
     "github.com/wolfeidau/humanhash"
+    "github.com/go-redis/redis" // use redis to store things
 )
+
+
+// setup redis
+var redisClient *redis.Client 
 
 /**
  * takes an IPv4 or IPv6 address and convert it to humandns name
@@ -17,13 +23,6 @@ import (
  * make sure the port part e.g. the :1234 in 127.0.0.1:1234 is NOT included in the ip
  */
 func IPtoHumanDNS(ipstr string) string {
-	
-	if strings.Contains(ipstr, "[") { // ipv6, take the brackets away before parsing
-		ipstr = strings.Split(ipstr, "[")[1]
-		ipstr = strings.Split(ipstr, "]")[0]
-
-		// log.Printf("[IPtoHash] ipv6 string processed: %#v", ipstr)
-	}
 
 	parsed := net.ParseIP(ipstr)
 	if parsed == nil {
@@ -58,6 +57,23 @@ func IPtoHumanDNS(ipstr string) string {
 	}
 }
 
+func storeMapping(dns string, ip net.IP) {
+	// ctx := context.TODO()
+	// result, err := client.Append()
+	dnsRes := redisClient.Get(dns)
+	// log.Printf("[storeMapping] val %#v", dnsRes.Val())
+	if dnsRes.Val() == "" { // not in redis yet
+		// log.Printf("[storeMapping] from is nil", dnsRes)
+		ipString := ip.String()
+		// key, value, expiration time in nanoseconds (0 means no expiration)
+		setRes := redisClient.Set(dns, ipString, 0)
+
+		log.Printf("[storeMapping] adding name %s as %s (result:%v) ", dns, ipString, setRes)
+	}
+	log.Printf("[storeMapping] from db: %v", dnsRes)
+
+}
+
 func homePage(w http.ResponseWriter, r *http.Request){
     
     // if r.Method == "GET" {
@@ -65,10 +81,23 @@ func homePage(w http.ResponseWriter, r *http.Request){
 	// log.Printf("r.RemoteAddr: %s", r.RemoteAddr)
 	remoteAddrParts := strings.Split(r.RemoteAddr, ":")
 	remoteIP := strings.Join(remoteAddrParts[:len(remoteAddrParts)-1], ":") // must handle both ipv4 and 6
+
+	if strings.Contains(remoteIP, "[") { // ipv6, take the brackets away before parsing
+		remoteIP = strings.Split(remoteIP, "[")[1]
+		remoteIP = strings.Split(remoteIP, "]")[0]
+
+		// log.Printf("ipv6 string processed: %#v", ipstr)
+	}
+
 	// log.Printf("remoteIP: %s", remoteIP)
 	resultDNS := IPtoHumanDNS(remoteIP)
+	if resultDNS != "error" {
+		go storeMapping(resultDNS, net.ParseIP(remoteIP))
+	}
+	
 	log.Printf("%s -> %s", remoteIP, resultDNS)
 	fmt.Fprintf(w, "%s", resultDNS)
+
     
 }
 
@@ -94,6 +123,12 @@ func main() {
 	result6, _ := humanhash.Humanize([]byte(result6_round1), 5) // make this one 5 words so that it's distinguishable from ipv4
 	log.Printf("(example) ipv4 name for address %s = %s.ip4", ip4str, result4)
 	log.Printf("(example) ipv4 name for address %s = %s.ip6", ip6str, result6)
+
+	redisClient = redis.NewClient(&redis.Options{
+	    Addr: "localhost:6379",
+	    Password: "",
+	    DB: 0,
+	})
 
 	handleRequests()
 
