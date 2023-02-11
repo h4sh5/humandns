@@ -4,7 +4,7 @@ Liberating DNS for humans. No more registrars; generate, register and act as aut
 
 Imagine a world where every single person and business have a `/64` IPv6 block (that's the mininum assignment!). That's 18 Billion Billion addresses! Even if you give them a `/96`, that's 4 Billion addresses, the size of the IPv4 internet in its entirety.
 
-With that many number of addresses, there's enough for everyone; but IPv6 addresses are very long, and impossible to send to someone via a human readable format unless you buy a domain. Forget about domains; those should be free!
+With that many number of addresses, there's enough for everyone; but IPv6 addresses are very long, and impossible to send to someone via a human readable format unless you buy a domain. Forget about buying domains; those should be free!
 
 This is where humandns comes in - it works by hashing the IP address the request comes from using [humanhash](https://github.com/wolfeidau/humanhash), which gives each IP a unique hash. You just get what you're given, the hashing algorithm ensures (mostly) that the same IP gets the same name. Just proof you own the IP address by sending a HTTP request from it.
 
