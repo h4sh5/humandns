@@ -52,7 +52,7 @@ func IPtoHumanDNS(ipstr string) string {
 			log.Printf("%s", err)
 			return "error"
 		}
-		return result4
+		return result4 + ".ip4"
 
 	}
 }
