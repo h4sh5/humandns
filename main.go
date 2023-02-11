@@ -77,7 +77,7 @@ func storeMapping(dns string, ip net.IP) {
 
 }
 
-func homePage(w http.ResponseWriter, r *http.Request){
+func registerPage(w http.ResponseWriter, r *http.Request){
     
     // if r.Method == "GET" {
 
@@ -104,10 +104,58 @@ func homePage(w http.ResponseWriter, r *http.Request){
     
 }
 
+func getMapping(dns string) string {
+	res := redisClient.Get(dns)
+	if res.Val() == "" {
+		return "not found"
+	} else {
+		return res.Val()
+	}
+
+}
+
+func resolvePage(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest) //400
+        fmt.Fprintf(w, "invalid request")
+    }
+    if len(r.Form["d"]) > 0 {
+    	res := getMapping(r.Form["d"][0])
+    	if res != "not found" {
+    		// ipv6
+    		if strings.Contains(r.Form["d"][0], "ip6") {
+    			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+    			fmt.Fprintf(w, "[%s]<br>visit <a href=http://[%s]>%s</a>", res,res,res)
+    		} else {
+    			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+    			fmt.Fprintf(w, "%s<br>visit <a href=http://%s>%s</a>", res,res,res)
+    		}
+    		
+    	} else { // 404 not found
+    		w.WriteHeader(http.StatusNotFound)
+    		fmt.Fprintf(w, res)
+    	}
+
+    }
+
+
+}
+
+func homePage(w http.ResponseWriter, r *http.Request) {
+	// w.WriteHeader(http.StatusNotFound)
+	// w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprintf(w, "To register your IP, go to /rego\nTo visit/resolve your domain, go to /visit?d=your-domain\n")
+}
+
 
 func handleRequests() {
 	log.Printf("handling requests now..")
     http.HandleFunc("/", homePage)
+    http.HandleFunc("/rego", registerPage)
+    http.HandleFunc("/register", registerPage)
+    http.HandleFunc("/visit", resolvePage)
+
     log.Fatal(http.ListenAndServe(":80", nil))
 }
  
