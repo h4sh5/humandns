@@ -8,6 +8,7 @@ import (
     "net/http"
     "strings"
     // "context"
+    "time"
     "github.com/wolfeidau/humanhash"
     "github.com/go-redis/redis" // use redis to store things
 )
@@ -15,6 +16,7 @@ import (
 
 // setup redis
 var redisClient *redis.Client 
+var ExpiryTimeInSeconds int64
 
 /**
  * takes an IPv4 or IPv6 address and convert it to humandns name
@@ -66,9 +68,10 @@ func storeMapping(dns string, ip net.IP) {
 		// log.Printf("[storeMapping] from is nil", dnsRes)
 		ipString := ip.String()
 		// key, value, expiration time in nanoseconds (0 means no expiration)
-		setRes := redisClient.Set(dns, ipString, 0)
+		expiry := time.Duration(ExpiryTimeInSeconds*1000000000)
+		setRes := redisClient.Set(dns, ipString, expiry)
 
-		log.Printf("[storeMapping] adding name %s as %s (result:%v) ", dns, ipString, setRes)
+		log.Printf("[storeMapping] adding name %s as %s (result:%v) with TTL %v seconds", dns, ipString, setRes, expiry.Seconds())
 	}
 	log.Printf("[storeMapping] from db: %v", dnsRes)
 
@@ -123,6 +126,8 @@ func main() {
 	result6, _ := humanhash.Humanize([]byte(result6_round1), 5) // make this one 5 words so that it's distinguishable from ipv4
 	log.Printf("(example) ipv4 name for address %s = %s.ip4", ip4str, result4)
 	log.Printf("(example) ipv4 name for address %s = %s.ip6", ip6str, result6)
+
+	ExpiryTimeInSeconds = 1800
 
 	redisClient = redis.NewClient(&redis.Options{
 	    Addr: "localhost:6379",
