@@ -8,6 +8,7 @@ import (
     "net/http"
     "strings"
     // "context"
+    "flag"
     "time"
     "github.com/wolfeidau/humanhash"
     "github.com/go-redis/redis" // use redis to store things
@@ -16,7 +17,7 @@ import (
 
 // setup redis
 var redisClient *redis.Client 
-var ExpiryTimeInSeconds int64
+var ExpiryTimeInSeconds uint
 
 /**
  * takes an IPv4 or IPv6 address and convert it to humandns name
@@ -167,7 +168,8 @@ func main() {
 	log.Printf("(example) ipv4 name for address %s = %s", ip4str, IPtoHumanDNS(ip4str))
 	log.Printf("(example) ipv4 name for address %s = %s", ip6str, IPtoHumanDNS(ip6str))
 
-	ExpiryTimeInSeconds = 1800
+	flag.UintVar(&ExpiryTimeInSeconds, "expiry", 1800, "expiry time in seconds")
+	flag.Parse()
 
 	redisClient = redis.NewClient(&redis.Options{
 	    Addr: "localhost:6379",
